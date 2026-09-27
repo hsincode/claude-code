@@ -68,75 +68,10 @@ ln -s "$(ghq root)/github.com/hsincode/claude-code/statusline.sh" ~/.claude/stat
 | キー | 値 | 理由 |
 |---|---|---|
 | `tui` | `"fullscreen"` | ちらつかない alt-screen レンダラ。通知がステータスラインと別の行に出る。`/tui fullscreen` でも書き込める |
-| `theme` | `"custom:catppuccin"` | 下記のカスタムテーマ |
+| `theme` | `"auto"` | 組み込みの配色のまま、端末の明暗に合わせて dark / light を選ぶ。Catppuccin はステータスラインだけに使う |
 | `spinnerTipsEnabled` | `false` | 作業中のスピナー行に出る使い方のヒントを消す |
 | `timeFormat` | `"24-hour"` | 回答後の「Cooked for 1m 6s · done 18:05」の時刻 |
 | `showTurnDuration` | `true` | 上の所要時間表示（既定値） |
 | `env.CLAUDE_CODE_NATIVE_CURSOR` | `"1"` | 入力欄で描画したブロックではなく端末自身のカーソルを使う（点滅や形が端末の設定に従う） |
 
 `fullscreen` は起動し直してから効く。ツール呼び出しの表示は既定のまま（1 行要約、`Ctrl+O` で展開）。（`viewMode` は設定しない。`"focus"` にすると最終回答以外がほぼ畳まれる）
-
-### Catppuccin テーマ
-
-カスタムテーマは `~/.claude/themes/<slug>.json` に置き、`theme` に `custom:<slug>` を指定する。Claude Code はこのディレクトリを監視していて、ファイルが変わると起動中のセッションにもそのまま反映する。
-
-カスタムテーマには「端末が明るいときは A、暗いときは B」という指定がない（`"auto"` が選ぶのは組み込みの dark / light だけ）。そこで dwm のテーマ切り替えスクリプトが、latte 版と mocha 版のどちらかを `~/.claude/themes/catppuccin.json` にコピーしている。コピーにしているのは、ディレクトリの監視にふつうのファイル変更として拾わせるため。
-
-mocha 版（アクセント peach）。latte 版は `base` を `"light-ansi"` にし、同じ役割の色を latte の値に、diff の背景を明るい 256 色（194 / 224 / 157 / 217 / 254）に置き換える。
-
-```json
-{
-  "name": "Catppuccin",
-  "base": "dark-ansi",
-  "overrides": {
-    "claude": "#fab387",
-    "text": "#cdd6f4",
-    "inverseText": "#1e1e2e",
-    "inactive": "#7f849c",
-    "subtle": "#6c7086",
-    "suggestion": "#b4befe",
-    "permission": "#89b4fa",
-    "remember": "#cba6f7",
-    "success": "#a6e3a1",
-    "error": "#f38ba8",
-    "warning": "#f9e2af",
-    "merged": "#cba6f7",
-    "promptBorder": "#585b70",
-    "planMode": "#94e2d5",
-    "autoAccept": "#cba6f7",
-    "bashBorder": "#f5c2e7",
-    "ide": "#89dceb",
-    "fastMode": "#f2cdcd",
-    "effortUltra": "#cba6f7",
-    "diffAdded": "ansi256(22)",
-    "diffRemoved": "ansi256(52)",
-    "diffAddedWord": "ansi256(28)",
-    "diffRemovedWord": "ansi256(88)",
-    "diffAddedDimmed": "ansi256(235)",
-    "diffRemovedDimmed": "ansi256(235)",
-    "userMessageBackground": "#292a3b",
-    "userMessageBackgroundHover": "#313244",
-    "bashMessageBackgroundColor": "#342e40",
-    "memoryBackgroundColor": "#2f2c42",
-    "selectionBg": "#45475a",
-    "rate_limit_fill": "#fab387",
-    "rate_limit_empty": "#45475a",
-    "briefLabelYou": "#89b4fa",
-    "briefLabelClaude": "#fab387"
-  }
-}
-```
-
-色の対応:
-
-- 役割色はそのまま使う（アクセント=`claude`、success=green、error=red、warning=yellow、プランモード=teal）
-- diff の背景は 256 色の番号で指定する（mocha: 追加 22 / 削除 52、単語単位の強調 28 / 88、却下後の薄い表示 235）
-
-### diff の構文ハイライト
-
-diff・コードブロック・ファイルプレビューの構文の色は、カスタムテーマのトークンでは変えられない。v2.1.283 の実装では、`base` が dark 系なら Monokai、light 系なら GitHub の固定の表を使い、`*-ansi` のときだけ端末の 16 色パレットを使う（キーワード=bright magenta、`const`・`fn`・型=bright cyan、数値=bright blue、文字列=bright green、関数名・クラス名=bright yellow、コメント=bright black）。Ghostty のパレットが Catppuccin なので、`base` を `dark-ansi` / `light-ansi` にすると構文の色も Catppuccin になり、latte / mocha にも追従する。
-
-代わりに `*-ansi` の diff は 256 色で描かれ、hex で指定した背景は最も近い 256 色に丸められる。Catppuccin の淡い混色は、追加と削除がどちらも同じ灰色（`#3a3a3a`）になってしまう。そのため diff の背景だけは `ansi256(n)` で指定している。これはドキュメントにない内部の実装なので、アップデートで変わるかもしれない。
-- 自分のメッセージの背景は base と surface0 の 60% 混合
-
-トークンの一覧は [Terminal configuration › Create a custom theme](https://code.claude.com/docs/en/terminal-config#create-a-custom-theme) を参照。
