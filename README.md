@@ -1,6 +1,6 @@
 # claude-code
 
-Claude Code（v2.1.283）の表示まわりの設定と、自作のステータスライン。
+Claude Code（v2.1.283）の表示まわりの設定と、自作のステータスライン、共通の CLAUDE.md。
 
 ```
 Opus 5.5 · medium · ctx 125.8k                         reset 41m · 5h 17% · 7d 16%
@@ -60,6 +60,14 @@ ln -s "$(ghq root)/github.com/hsincode/claude-code/statusline.sh" ~/.claude/stat
 ```
 
 `refreshInterval` は reset の残り時間を進めるためのもの。Claude Code は応答やレート制限のリセット時にも描き直すが、アイドル中はそれが止まる。
+
+## CLAUDE.md
+
+全プロジェクト共通の指示（`~/.claude/CLAUDE.md`）。今は日本語の書き方だけで、定着したカタカナ語や英語を直訳しないよう指示している。
+
+```sh
+ln -s "$(ghq root)/github.com/hsincode/claude-code/CLAUDE.md" ~/.claude/CLAUDE.md
+```
 
 ## 表示まわりの設定
 
