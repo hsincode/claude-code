@@ -82,12 +82,12 @@ ln -s "$(ghq root)/github.com/hsincode/claude-code/statusline.sh" ~/.claude/stat
 
 カスタムテーマには「端末が明るいときは A、暗いときは B」という指定がない（`"auto"` が選ぶのは組み込みの dark / light だけ）。そこで dwm のテーマ切り替えスクリプトが、latte 版と mocha 版のどちらかを `~/.claude/themes/catppuccin.json` にコピーしている。コピーにしているのは、ディレクトリの監視にふつうのファイル変更として拾わせるため。
 
-mocha 版（アクセント peach）。latte 版は `base` を `"light"` にし、同じ役割の色を latte の値に置き換える。
+mocha 版（アクセント peach）。latte 版は `base` を `"light-ansi"` にし、同じ役割の色を latte の値に、diff の背景を明るい 256 色（194 / 224 / 157 / 217 / 254）に置き換える。
 
 ```json
 {
   "name": "Catppuccin",
-  "base": "dark",
+  "base": "dark-ansi",
   "overrides": {
     "claude": "#fab387",
     "text": "#cdd6f4",
@@ -108,12 +108,12 @@ mocha 版（アクセント peach）。latte 版は `base` を `"light"` にし�
     "ide": "#89dceb",
     "fastMode": "#f2cdcd",
     "effortUltra": "#cba6f7",
-    "diffAdded": "#364143",
-    "diffRemoved": "#443244",
-    "diffAddedDimmed": "#282c36",
-    "diffRemovedDimmed": "#2d2637",
-    "diffAddedWord": "#52695a",
-    "diffRemovedWord": "#6f475c",
+    "diffAdded": "ansi256(22)",
+    "diffRemoved": "ansi256(52)",
+    "diffAddedWord": "ansi256(28)",
+    "diffRemovedWord": "ansi256(88)",
+    "diffAddedDimmed": "ansi256(235)",
+    "diffRemovedDimmed": "ansi256(235)",
     "userMessageBackground": "#292a3b",
     "userMessageBackgroundHover": "#313244",
     "bashMessageBackgroundColor": "#342e40",
@@ -130,7 +130,13 @@ mocha 版（アクセント peach）。latte 版は `base` を `"light"` にし�
 色の対応:
 
 - 役割色はそのまま使う（アクセント=`claude`、success=green、error=red、warning=yellow、プランモード=teal）
-- 差分の背景は base に green / red を混ぜる（通常 18%、却下後の薄い表示 7%、単語単位の強調 38%）
+- diff の背景は 256 色の番号で指定する（mocha: 追加 22 / 削除 52、単語単位の強調 28 / 88、却下後の薄い表示 235）
+
+### diff の構文ハイライト
+
+diff・コードブロック・ファイルプレビューの構文の色は、カスタムテーマのトークンでは変えられない。v2.1.283 の実装では、`base` が dark 系なら Monokai、light 系なら GitHub の固定の表を使い、`*-ansi` のときだけ端末の 16 色パレットを使う（キーワード=bright magenta、`const`・`fn`・型=bright cyan、数値=bright blue、文字列=bright green、関数名・クラス名=bright yellow、コメント=bright black）。Ghostty のパレットが Catppuccin なので、`base` を `dark-ansi` / `light-ansi` にすると構文の色も Catppuccin になり、latte / mocha にも追従する。
+
+代わりに `*-ansi` の diff は 256 色で描かれ、hex で指定した背景は最も近い 256 色に丸められる。Catppuccin の淡い混色は、追加と削除がどちらも同じ灰色（`#3a3a3a`）になってしまう。そのため diff の背景だけは `ansi256(n)` で指定している。これはドキュメントにない内部の実装なので、アップデートで変わるかもしれない。
 - 自分のメッセージの背景は base と surface0 の 60% 混合
 
 トークンの一覧は [Terminal configuration › Create a custom theme](https://code.claude.com/docs/en/terminal-config#create-a-custom-theme) を参照。
