@@ -68,14 +68,13 @@ ln -s "$(ghq root)/github.com/hsincode/claude-code/statusline.sh" ~/.claude/stat
 | キー | 値 | 理由 |
 |---|---|---|
 | `tui` | `"fullscreen"` | ちらつかない alt-screen レンダラ。通知がステータスラインと別の行に出る。`/tui fullscreen` でも書き込める |
-| `viewMode` | `"focus"` | 直前の入力・ツール呼び出しの 1 行要約（差分の行数付き）・最終回答だけを表示。fullscreen が前提 |
 | `theme` | `"custom:catppuccin"` | 下記のカスタムテーマ |
 | `spinnerTipsEnabled` | `false` | 作業中のスピナー行に出る使い方のヒントを消す |
 | `timeFormat` | `"24-hour"` | 回答後の「Cooked for 1m 6s · done 18:05」の時刻 |
 | `showTurnDuration` | `true` | 上の所要時間表示（既定値） |
 | `env.CLAUDE_CODE_NATIVE_CURSOR` | `"1"` | 入力欄で描画したブロックではなく端末自身のカーソルを使う（点滅や形が端末の設定に従う） |
 
-`fullscreen` と `viewMode` は起動し直してから効く。
+`fullscreen` は起動し直してから効く。ツール呼び出しの表示は既定のまま（1 行要約、`Ctrl+O` で展開）。`viewMode: "focus"` も試したが、ツール呼び出しまで畳まれて途中経過が追えないのでやめた。
 
 ### Catppuccin テーマ
 
