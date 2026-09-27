@@ -74,7 +74,7 @@ ln -s "$(ghq root)/github.com/hsincode/claude-code/statusline.sh" ~/.claude/stat
 | `showTurnDuration` | `true` | 上の所要時間表示（既定値） |
 | `env.CLAUDE_CODE_NATIVE_CURSOR` | `"1"` | 入力欄で描画したブロックではなく端末自身のカーソルを使う（点滅や形が端末の設定に従う） |
 
-`fullscreen` は起動し直してから効く。ツール呼び出しの表示は既定のまま（1 行要約、`Ctrl+O` で展開）。`viewMode: "focus"` も試したが、ツール呼び出しまで畳まれて途中経過が追えないのでやめた。
+`fullscreen` は起動し直してから効く。ツール呼び出しの表示は既定のまま（1 行要約、`Ctrl+O` で展開）。（`viewMode` は設定しない。`"focus"` にすると最終回答以外がほぼ畳まれる）
 
 ### Catppuccin テーマ
 
