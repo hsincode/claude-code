@@ -1,22 +1,27 @@
 #!/usr/bin/env bash
 # Claude Code status line (settings.json statusLine.command).
-#   Opus 5.5 · medium · ctx 79.9k                reset 39m · 5h 15% · 7d 15%
-#   ~/ghq/github.com/hsincode · main
+#   Opus 5.5 · medium · ctx 79.9k    reset 39m · 5h 15% · 7d 15% · fable 5%
+#   ~/ghq/github.com/hsincode · main                                 my-task
 # Catppuccin truecolour: the flavour (latte / mocha) and the accent follow the
 # current dwm theme (~/.local/state/dwm/theme, written by dwm on every switch;
 # the accent comes from ~/.config/dwm/themes/<theme>.env). Without dwm, set
 # CLAUDE_STATUSLINE_FLAVOUR (latte / mocha) and CLAUDE_STATUSLINE_ACCENT
 # (a Catppuccin colour name); the default is mocha / peach. Everything else
-# comes from the JSON on stdin; nothing is fetched.
+# comes from the JSON on stdin, except the Fable weekly limit, which is fetched
+# in the background and cached (see below). On the Ultra plan
+# (~/.claude.json .oauthAccount.planDisplayName) the 5-hour limit and its reset
+# countdown are left out.
 
-IFS=$'\x1f' read -r model effort tokens h5 h5reset d7 dir < <(jq -r '[
+IFS=$'\x1f' read -r model effort tokens h5 h5reset d7 dir sid sname < <(jq -r '[
 	.model.display_name // "?",
 	.effort.level // "",
 	(.context_window.total_input_tokens // ""),
 	(.rate_limits.five_hour.used_percentage // ""),
 	(.rate_limits.five_hour.resets_at // ""),
 	(.rate_limits.seven_day.used_percentage // ""),
-	.workspace.current_dir // .cwd // ""
+	.workspace.current_dir // .cwd // "",
+	.session_id // "",
+	.session_name // ""
 ] | map(tostring) | join("\u001f")')
 
 # --- palette ----------------------------------------------------------------
@@ -85,6 +90,10 @@ else
 	add l "${LBL}ctx$R ${LBL}—$R" "ctx —"
 fi
 
+# Ultra has no 5-hour limit worth watching: drop it and its reset countdown
+plan=$(jq -r '.oauthAccount.planDisplayName // ""' "${CLAUDE_CONFIG_DIR:-$HOME}/.claude.json" 2>/dev/null)
+[ "$plan" = Ultra ] && h5= h5reset=
+
 if [ -n "$h5reset" ]; then
 	s=$(( ${h5reset%.*} - $(date +%s) ))
 	((s < 0)) && s=0
@@ -95,6 +104,27 @@ if [ -n "$h5reset" ]; then
 fi
 [ -n "$h5" ] && add r "${LBL}5h$R $(pct "$h5")" "5h $(printf '%.0f%%' "$h5")"
 [ -n "$d7" ] && add r "${LBL}7d$R $(pct "$d7")" "7d $(printf '%.0f%%' "$d7")"
+
+# Fable weekly limit: not in the stdin JSON, so it comes from the OAuth usage
+# endpoint (limits[] kind weekly_scoped, scope.model.display_name "Fable").
+# Fetched in the background at most every 5 minutes into a cache; the line
+# always shows the cached value, so it never waits on the network.
+fcache=${XDG_CACHE_HOME:-$HOME/.cache}/claude-statusline/fable-weekly
+mkdir -p "${fcache%/*}"
+if [ ! -e "$fcache" ] || (($(date +%s) - $(stat -c %Y "$fcache") >= 300)); then
+	touch "$fcache" # claim this round so parallel runs don't fetch too
+	(
+		tok=$(jq -r '.claudeAiOauth.accessToken // empty' "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/.credentials.json" 2>/dev/null)
+		[ -n "$tok" ] || exit
+		v=$(curl -sf -m 10 https://api.anthropic.com/api/oauth/usage \
+			-H "Authorization: Bearer $tok" -H 'anthropic-beta: oauth-2025-04-20' |
+			jq -r 'first(.limits[]? | select(.kind == "weekly_scoped" and .scope.model.display_name == "Fable") | .percent) // empty') || exit
+		[ -n "$v" ] && printf '%s\n' "$v" >"$fcache.tmp" && mv "$fcache.tmp" "$fcache"
+	) >/dev/null 2>&1 &
+	disown
+fi
+fable=$(cat "$fcache" 2>/dev/null)
+[ -n "$fable" ] && add r "${LBL}fable$R $(pct "$fable")" "fable $(printf '%.0f%%' "$fable")"
 
 # Claude Code indents the status line by 2 and truncates 2 before the right
 # edge (measured: COLUMNS=146 shows 142 columns of output)
@@ -107,10 +137,35 @@ else
 	printf '%s%s%s\n' "$left" "$SEP" "$right"
 fi
 
-# line 2: directory and git branch
-line2="$(fg subtext0)${dir/#$HOME/\~}$R"
+# line 2: directory and git branch; on the right, the session name (set with
+# /rename; Claude Code sends it only once one is set), else the short session id
+# widths are display columns (wc -L), since the name is often Japanese
+dw() { printf '%s' "$1" | wc -L; }
+d=${dir/#$HOME/\~}
+line2="$(fg subtext0)$d$R" l2w=$(dw "$d")
 if [ -n "$dir" ] && branch=$(git --no-optional-locks -C "$dir" symbolic-ref --short -q HEAD 2>/dev/null ||
 	git --no-optional-locks -C "$dir" rev-parse --short HEAD 2>/dev/null); then
-	line2+="$SEP$(fg mauve)$branch$R"
+	line2+="$SEP$(fg mauve)$branch$R" l2w=$((l2w + 3 + $(dw "$branch")))
 fi
-printf '%s\n' "$line2"
+name=${sname:-${sid:0:8}}
+if [ -z "$name" ]; then
+	printf '%s\n' "$line2"
+	exit
+fi
+# right-align with a gap of at least 4; a name too long for that is cut
+# with "…" instead of letting Claude Code truncate the whole line
+room=$((cols - margin - l2w - 4))
+nw=$(dw "$name")
+if ((cols > 0 && nw > room)); then
+	while ((${#name} > 0 && nw + 1 > room)); do
+		name=${name:0:-1} nw=$(dw "$name")
+	done
+	[ -n "$name" ] && name+=… nw=$((nw + 1))
+fi
+if [ -z "$name" ]; then
+	printf '%s\n' "$line2"
+elif ((cols > 0)); then
+	printf '%s%*s%s\n' "$line2" $((cols - margin - l2w - nw)) '' "$(fg "$ACCENT")$name$R"
+else
+	printf '%s%s%s\n' "$line2" "$SEP" "$(fg "$ACCENT")$name$R"
+fi
