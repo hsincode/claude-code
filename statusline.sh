@@ -10,15 +10,17 @@
 # comes from the JSON on stdin, except the Fable weekly limit, which is fetched
 # in the background and cached (see below). On the Ultra plan
 # (~/.claude.json .oauthAccount.planDisplayName) the 5-hour limit and its reset
-# countdown are left out.
+# countdown are left out, and the countdown to the weekly reset takes their
+# place (reset 3d04h · 7d 15%); other plans don't show the weekly countdown.
 
-IFS=$'\x1f' read -r model effort tokens h5 h5reset d7 dir sid sname < <(jq -r '[
+IFS=$'\x1f' read -r model effort tokens h5 h5reset d7 d7reset dir sid sname < <(jq -r '[
 	.model.display_name // "?",
 	.effort.level // "",
 	(.context_window.total_input_tokens // ""),
 	(.rate_limits.five_hour.used_percentage // ""),
 	(.rate_limits.five_hour.resets_at // ""),
 	(.rate_limits.seven_day.used_percentage // ""),
+	(.rate_limits.seven_day.resets_at // ""),
 	.workspace.current_dir // .cwd // "",
 	.session_id // "",
 	.session_name // ""
@@ -65,6 +67,10 @@ case $effort in
 	low) EFF=$(fg teal) ;; medium) EFF=$(fg sapphire) ;; high) EFF=$(fg mauve) ;;
 	xhigh) EFF=$(fg pink) ;; max) EFF=$(fg maroon bold) ;; *) EFF=$(fg subtext1) ;;
 esac
+# shown capitalised: Low, Medium, High, XHigh, Max
+case $effort in
+	xhigh) effort=XHigh ;; *) effort=${effort^} ;;
+esac
 
 # --- layout -----------------------------------------------------------------
 # Segments are kept as (text, visible width) so the right block can be
@@ -94,15 +100,25 @@ fi
 plan=$(jq -r '.oauthAccount.planDisplayName // ""' "${CLAUDE_CONFIG_DIR:-$HOME}/.claude.json" 2>/dev/null)
 [ "$plan" = Ultra ] && h5= h5reset=
 
-if [ -n "$h5reset" ]; then
-	s=$(( ${h5reset%.*} - $(date +%s) ))
+# remain <epoch>: time left, rounded up to the minute: 39m, 2h05m, 3d04h
+remain() {
+	local s=$((${1%.*} - $(date +%s))) d h m
 	((s < 0)) && s=0
-	h=$((s / 3600)) m=$(((s % 3600 + 59) / 60))
-	((m == 60)) && h=$((h + 1)) m=0
-	if ((h > 0)); then t=$(printf '%dh%02dm' "$h" "$m"); else t=${m}m; fi
+	m=$(((s + 59) / 60)) h=$((m / 60)) d=$((m / 1440))
+	if ((d > 0)); then printf '%dd%02dh' "$d" $((h % 24))
+	elif ((h > 0)); then printf '%dh%02dm' "$h" $((m % 60))
+	else printf '%dm' "$m"; fi
+}
+
+if [ -n "$h5reset" ]; then
+	t=$(remain "$h5reset")
 	add r "${LBL}reset$R $(fg sky)$t$R" "reset $t"
 fi
 [ -n "$h5" ] && add r "${LBL}5h$R $(pct "$h5")" "5h $(printf '%.0f%%' "$h5")"
+if [ "$plan" = Ultra ] && [ -n "$d7" ] && [ -n "$d7reset" ]; then
+	t=$(remain "$d7reset")
+	add r "${LBL}reset$R $(fg sky)$t$R" "reset $t"
+fi
 [ -n "$d7" ] && add r "${LBL}7d$R $(pct "$d7")" "7d $(printf '%.0f%%' "$d7")"
 
 # Fable weekly limit: not in the stdin JSON, so it comes from the OAuth usage
