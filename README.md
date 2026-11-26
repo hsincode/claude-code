@@ -1,6 +1,6 @@
 # claude-code
 
-Claude Code（v2.1.283）の表示まわりの設定と、自作のステータスライン、共通の CLAUDE.md。
+Claude Code（v2.1.283）の表示まわりの設定と、自作のステータスライン、キー割り当て、共通の CLAUDE.md。
 
 ```
 Opus 5.5 · medium · ctx 125.8k                         reset 41m · 5h 17% · 7d 16%
@@ -27,7 +27,7 @@ Claude Code が標準入力に渡す JSON だけで描くステータスライ�
 Catppuccin の truecolor。
 
 - モデル名: アクセント色（太字）
-- effort: low=teal、medium=sapphire、high=mauve、xhigh=pink、max=maroon
+- effort: low=overlay2、medium=teal、high=sapphire、xhigh=blue（太字）、max=blue 地に base の文字のバッジ。使用率の警告色（green / yellow / peach / red）やブランチ（mauve）と紛れないよう寒色だけで、上がるほど濃くなる
 - 5h / 7d: 50% 未満 green、50% 以上 yellow、70% 以上 peach、85% 以上 red
 - reset: sky、ラベル: overlay1、区切り `·`: surface2、ディレクトリ: subtext0、ブランチ: mauve
 
@@ -69,6 +69,16 @@ ln -s "$(ghq root)/github.com/hsincode/claude-code/statusline.sh" ~/.claude/stat
 ln -s "$(ghq root)/github.com/hsincode/claude-code/CLAUDE.md" ~/.claude/CLAUDE.md
 ```
 
+## keybindings.json
+
+キー割り当て（`~/.claude/keybindings.json`）。入力欄で Esc を押すと、作業を中断する代わりに `/background`（別名 `/bg`）でセッションを裏に回す。端末では `Ctrl+[` も Esc と同じ文字で届くので、こちらも同じ動きになる。中断は `Ctrl+C` で行う。
+
+```sh
+ln -s "$(ghq root)/github.com/hsincode/claude-code/keybindings.json" ~/.claude/keybindings.json
+```
+
+agents view（`claude agents`）を開くキーはアクションとして公開されていないので割り当てられない。空の入力欄で `←` を 2 回押すと開く。
+
 ## 表示まわりの設定
 
 どれも `~/.claude/settings.json` のキー。値は [settings reference](https://code.claude.com/docs/en/settings-reference) の「Interface and terminal」を参照。
@@ -81,5 +91,6 @@ ln -s "$(ghq root)/github.com/hsincode/claude-code/CLAUDE.md" ~/.claude/CLAUDE.m
 | `timeFormat` | `"24-hour"` | 回答後の「Cooked for 1m 6s · done 18:05」の時刻 |
 | `showTurnDuration` | `true` | 上の所要時間表示（既定値） |
 | `env.CLAUDE_CODE_NATIVE_CURSOR` | `"1"` | 入力欄で描画したブロックではなく端末自身のカーソルを使う（点滅や形が端末の設定に従う） |
+| `env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` | `"1"` | 実験中の agent teams を有効にする（複数のセッションをチームとして動かし、互いにメッセージを送り合える） |
 
 `fullscreen` は起動し直してから効く。ツール呼び出しの表示は既定のまま（1 行要約、`Ctrl+O` で展開）。（`viewMode` は設定しない。`"focus"` にすると最終回答以外がほぼ畳まれる）

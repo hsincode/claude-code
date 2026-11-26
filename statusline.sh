@@ -39,17 +39,21 @@ if [ "$FLAVOUR" = latte ]; then
 	   [maroon]=e64553 [peach]=fe640b [yellow]=df8e1d [green]=40a02b [teal]=179299
 	   [sky]=04a5e5 [sapphire]=209fb5 [blue]=1e66f5 [lavender]=7287fd [text]=4c4f69
 	   [subtext1]=5c5f77 [subtext0]=6c6f85 [overlay2]=7c7f93 [overlay1]=8c8fa1
-	   [overlay0]=9ca0b0 [surface2]=acb0be)
+	   [overlay0]=9ca0b0 [surface2]=acb0be [base]=eff1f5)
 else
 	C=([rosewater]=f5e0dc [flamingo]=f2cdcd [pink]=f5c2e7 [mauve]=cba6f7 [red]=f38ba8
 	   [maroon]=eba0ac [peach]=fab387 [yellow]=f9e2af [green]=a6e3a1 [teal]=94e2d5
 	   [sky]=89dceb [sapphire]=74c7ec [blue]=89b4fa [lavender]=b4befe [text]=cdd6f4
 	   [subtext1]=bac2de [subtext0]=a6adc8 [overlay2]=9399b2 [overlay1]=7f849c
-	   [overlay0]=6c7086 [surface2]=585b70)
+	   [overlay0]=6c7086 [surface2]=585b70 [base]=1e1e2e)
 fi
 fg() { # fg <name> [bold]: truecolour escape for a palette colour
 	local h=${C[$1]:-${C[text]}}
 	printf '\e[%s38;2;%d;%d;%dm' "${2:+1;}" $((16#${h:0:2})) $((16#${h:2:2})) $((16#${h:4:2}))
+}
+bg() { # bg <name>: truecolour background escape for a palette colour
+	local h=${C[$1]:-${C[base]}}
+	printf '\e[48;2;%d;%d;%dm' $((16#${h:0:2})) $((16#${h:2:2})) $((16#${h:4:2}))
 }
 R=$'\e[0m'
 TEXT=$(fg text) LBL=$(fg overlay1) SEP="$(fg surface2) · $R"
@@ -62,14 +66,16 @@ level() {
 }
 pct() { [ -n "$1" ] && printf '%s%.0f%%%s' "$(level "$1")" "$1" "$R"; }
 
-# effort in a cool-to-warm ramp, so a raised effort stands out
+# effort in cool colours only, deepening as it rises, so it never reads as one
+# of the usage warnings (green / yellow / peach / red) and stays clear of the
+# branch (mauve) and the dwm accents (peach / lavender / mauve); Max is a badge
 case $effort in
-	low) EFF=$(fg teal) ;; medium) EFF=$(fg sapphire) ;; high) EFF=$(fg mauve) ;;
-	xhigh) EFF=$(fg pink) ;; max) EFF=$(fg maroon bold) ;; *) EFF=$(fg subtext1) ;;
+	low) EFF=$(fg overlay2) ;; medium) EFF=$(fg teal) ;; high) EFF=$(fg sapphire) ;;
+	xhigh) EFF=$(fg blue bold) ;; max) EFF=$(bg blue)$(fg base bold) ;; *) EFF=$(fg subtext1) ;;
 esac
-# shown capitalised: Low, Medium, High, XHigh, Max
+# shown capitalised: Low, Medium, High, XHigh, Max (padded inside its badge)
 case $effort in
-	xhigh) effort=XHigh ;; *) effort=${effort^} ;;
+	xhigh) effort=XHigh ;; max) effort=" Max " ;; *) effort=${effort^} ;;
 esac
 
 # --- layout -----------------------------------------------------------------
